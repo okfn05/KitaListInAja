@@ -2,92 +2,129 @@
 // dashboard.php
 session_start();
 
-// Check if user is logged in
+// Check if user is logged in first
 if(!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
 
-include_once 'config/database.php';
-;
+// Include required files
+include_once 'config/database.php'; // Sudah berisi class Task juga
 
 $database = new Database();
 $db = $database->getConnection();
 $task = new Task($db);
 $task->user_id = $_SESSION['user_id'];
 
-// Handle AJAX requests
+// Handle AJAX requests - pindahkan ke atas sebelum output HTML
 if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
+    // Set proper content type
     header('Content-Type: application/json');
     
-    switch($_POST['action']) {
-        case 'create':
-            $task->title = $_POST['title'];
-            $task->category = $_POST['category'];
-            $task->priority = $_POST['priority'];
-            $task->status = 'todo';
-            $task->due_date = $_POST['due_date'];
-            
-            if($task->create()) {
-                echo json_encode(['success' => true, 'message' => 'Task berhasil ditambahkan']);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Gagal menambahkan task']);
-            }
-            exit();
-            
-        case 'update':
-            $task->id = $_POST['id'];
-            $task->title = $_POST['title'];
-            $task->category = $_POST['category'];
-            $task->priority = $_POST['priority'];
-            $task->status = $_POST['status'];
-            $task->due_date = $_POST['due_date'];
-            
-            if($task->update()) {
-                echo json_encode(['success' => true, 'message' => 'Task berhasil diupdate']);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Gagal mengupdate task']);
-            }
-            exit();
-            
-        case 'delete':
-            $task->id = $_POST['id'];
-            
-            if($task->delete()) {
-                echo json_encode(['success' => true, 'message' => 'Task berhasil dihapus']);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Gagal menghapus task']);
-            }
-            exit();
-            
-        case 'toggle_status':
-            $task->id = $_POST['id'];
-            // Get current task data
-            $query = "SELECT * FROM tasks WHERE id = :id AND user_id = :user_id";
-            $stmt = $db->prepare($query);
-            $stmt->bindParam(":id", $task->id);
-            $stmt->bindParam(":user_id", $task->user_id);
-            $stmt->execute();
-            $current_task = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if($current_task) {
-                $task->title = $current_task['title'];
-                $task->category = $current_task['category'];
-                $task->priority = $current_task['priority'];
-                $task->due_date = $current_task['due_date'];
-                $task->status = $current_task['status'] == 'completed' ? 'todo' : 'completed';
+    // Turn off error display to prevent HTML in JSON response
+    ini_set('display_errors', 0);
+    
+    try {
+        switch($_POST['action']) {
+            case 'create':
+                // Validate input
+                if (empty($_POST['title']) || empty($_POST['category']) || empty($_POST['priority']) || empty($_POST['due_date'])) {
+                    echo json_encode(['success' => false, 'message' => 'All fields are required']);
+                    exit();
+                }
+                
+                $task->title = $_POST['title'];
+                $task->category = $_POST['category'];
+                $task->priority = $_POST['priority'];
+                $task->status = 'todo';
+                $task->due_date = $_POST['due_date'];
+                
+                if($task->create()) {
+                    echo json_encode(['success' => true, 'message' => 'Task berhasil ditambahkan']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Gagal menambahkan task']);
+                }
+                exit();
+                
+            case 'update':
+                // Validate input
+                if (empty($_POST['id']) || empty($_POST['title']) || empty($_POST['category']) || empty($_POST['priority']) || empty($_POST['due_date'])) {
+                    echo json_encode(['success' => false, 'message' => 'All fields are required']);
+                    exit();
+                }
+                
+                $task->id = $_POST['id'];
+                $task->title = $_POST['title'];
+                $task->category = $_POST['category'];
+                $task->priority = $_POST['priority'];
+                $task->status = $_POST['status'] ?? 'todo';
+                $task->due_date = $_POST['due_date'];
                 
                 if($task->update()) {
-                    echo json_encode(['success' => true, 'new_status' => $task->status]);
+                    echo json_encode(['success' => true, 'message' => 'Task berhasil diupdate']);
                 } else {
-                    echo json_encode(['success' => false, 'message' => 'Gagal mengubah status']);
+                    echo json_encode(['success' => false, 'message' => 'Gagal mengupdate task']);
                 }
-            }
-            exit();
+                exit();
+                
+            case 'delete':
+                if (empty($_POST['id'])) {
+                    echo json_encode(['success' => false, 'message' => 'Task ID is required']);
+                    exit();
+                }
+                
+                $task->id = $_POST['id'];
+                
+                if($task->delete()) {
+                    echo json_encode(['success' => true, 'message' => 'Task berhasil dihapus']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Gagal menghapus task']);
+                }
+                exit();
+                
+            case 'toggle_status':
+                if (empty($_POST['id'])) {
+                    echo json_encode(['success' => false, 'message' => 'Task ID is required']);
+                    exit();
+                }
+                
+                $task->id = $_POST['id'];
+                // Get current task data
+                $query = "SELECT * FROM tasks WHERE id = :id AND user_id = :user_id";
+                $stmt = $db->prepare($query);
+                $stmt->bindParam(":id", $task->id);
+                $stmt->bindParam(":user_id", $task->user_id);
+                $stmt->execute();
+                $current_task = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if($current_task) {
+                    $task->title = $current_task['title'];
+                    $task->category = $current_task['category'];
+                    $task->priority = $current_task['priority'];
+                    $task->due_date = $current_task['due_date'];
+                    $task->status = $current_task['status'] == 'completed' ? 'todo' : 'completed';
+                    
+                    if($task->update()) {
+                        echo json_encode(['success' => true, 'new_status' => $task->status]);
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Gagal mengubah status']);
+                    }
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Task not found']);
+                }
+                exit();
+                
+            default:
+                echo json_encode(['success' => false, 'message' => 'Invalid action']);
+                exit();
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        exit();
     }
 }
 
-// Get tasks and stats
+// Get tasks and stats untuk display
 $stmt = $task->readAll();
 $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $stats = $task->getStats();
@@ -612,6 +649,7 @@ $stats = $task->getStats();
                         <div class="task-item" data-id="<?php echo $t['id']; ?>" data-category="<?php echo $t['category']; ?>" data-priority="<?php echo $t['priority']; ?>">
                             <div class="task-header">
                                 <div>
+                                    <div class="task-title"><?php echo htmlspecialchars($t['title']); ?></div>
                                     <div class="task-date"><?php echo date('d M Y', strtotime($t['due_date'])); ?></div>
                                 </div>
                             </div>
@@ -622,7 +660,7 @@ $stats = $task->getStats();
                             <div class="task-actions">
                                 <input type="checkbox" class="task-checkbox" onchange="toggleStatus(<?php echo $t['id']; ?>)">
                                 <div class="action-buttons">
-                                    <button class="btn-edit" onclick="editTask(<?php echo $t['id']; ?>, '<?php echo addslashes($t['title']); ?>', '<?php echo $t['category']; ?>', '<?php echo $t['priority']; ?>', '<?php echo $t['due_date']; ?>')">
+                                    <button class="btn-edit" onclick="editTask(<?php echo $t['id']; ?>, <?php echo htmlspecialchars(json_encode($t['title']), ENT_QUOTES, 'UTF-8'); ?>, '<?php echo $t['category']; ?>', '<?php echo $t['priority']; ?>', '<?php echo $t['due_date']; ?>')">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button class="btn-delete" onclick="deleteTask(<?php echo $t['id']; ?>)">
@@ -643,33 +681,33 @@ $stats = $task->getStats();
                         </span>
                         <span class="task-count" id="done-count"><?php echo count(array_filter($tasks, function($t) { return $t['status'] == 'completed'; })); ?></span>
                     </div>
-                    <div id="done-tasks">
-                        <?php foreach($tasks as $t): if($t['status'] == 'completed'): ?>
-                        <div class="task-item completed" data-id="<?php echo $t['id']; ?>" data-category="<?php echo $t['category']; ?>" data-priority="<?php echo $t['priority']; ?>">
-                            <div class="task-header">
-                                <div>
-                                    <div class="task-title"><?php echo htmlspecialchars($t['title']); ?></div>
-                                    <div class="task-date"><?php echo date('d M Y', strtotime($t['due_date'])); ?></div>
+                        <div id="done-tasks">
+                            <?php foreach($tasks as $t): if($t['status'] == 'completed'): ?>
+                            <div class="task-item completed" data-id="<?php echo $t['id']; ?>" data-category="<?php echo $t['category']; ?>" data-priority="<?php echo $t['priority']; ?>">
+                                <div class="task-header">
+                                    <div>
+                                        <div class="task-title"><?php echo htmlspecialchars($t['title']); ?></div>
+                                        <div class="task-date"><?php echo date('d M Y', strtotime($t['due_date'])); ?></div>
+                                    </div>
+                                </div>
+                                <div class="task-tags">
+                                    <span class="tag tag-<?php echo $t['category']; ?>"><?php echo ucfirst($t['category']); ?></span>
+                                    <span class="tag tag-<?php echo $t['priority']; ?>"><?php echo ucfirst($t['priority']); ?></span>
+                                </div>
+                                <div class="task-actions">
+                                    <input type="checkbox" class="task-checkbox" checked onchange="toggleStatus(<?php echo $t['id']; ?>)">
+                                    <div class="action-buttons">
+                                        <button class="btn-edit" onclick="editTask(<?php echo $t['id']; ?>, <?php echo htmlspecialchars(json_encode($t['title']), ENT_QUOTES, 'UTF-8'); ?>, '<?php echo $t['category']; ?>', '<?php echo $t['priority']; ?>', '<?php echo $t['due_date']; ?>')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn-delete" onclick="deleteTask(<?php echo $t['id']; ?>)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="task-tags">
-                                <span class="tag tag-<?php echo $t['category']; ?>"><?php echo ucfirst($t['category']); ?></span>
-                                <span class="tag tag-<?php echo $t['priority']; ?>"><?php echo ucfirst($t['priority']); ?></span>
-                            </div>
-                            <div class="task-actions">
-                                <input type="checkbox" class="task-checkbox" checked onchange="toggleStatus(<?php echo $t['id']; ?>)">
-                                <div class="action-buttons">
-                                    <button class="btn-edit" onclick="editTask(<?php echo $t['id']; ?>, '<?php echo addslashes($t['title']); ?>', '<?php echo $t['category']; ?>', '<?php echo $t['priority']; ?>', '<?php echo $t['due_date']; ?>')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn-delete" onclick="deleteTask(<?php echo $t['id']; ?>)">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <?php endif; endforeach; ?>
-                    </div>
+                            <?php endif; endforeach; ?>
+                        </div>                    
                 </div>
             </div>
         </div>
@@ -756,22 +794,33 @@ $stats = $task->getStats();
             const isEdit = document.getElementById('taskId').value !== '';
             formData.append('action', isEdit ? 'update' : 'create');
             
+            // Validate form data
+            if (!formData.get('title') || !formData.get('category') || !formData.get('priority') || !formData.get('due_date')) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
             fetch('dashboard.php', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if(data.success) {
                     closeModal();
                     location.reload(); // Refresh to show changes
                 } else {
-                    alert(data.message);
+                    alert(data.message || 'An error occurred');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Terjadi kesalahan');
+                alert('Terjadi kesalahan: ' + error.message);
             });
         });
 

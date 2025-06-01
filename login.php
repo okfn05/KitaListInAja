@@ -47,15 +47,15 @@ if ($_POST && isset($_POST['login_type']) && $_POST['login_type'] === 'regular')
     }
 }
 
-// Handle OAuth login (simulasi - akan dijelaskan implementasi sesungguhnya di bawah)
+// Handle OAuth login 
 if ($_POST && isset($_POST['oauth_provider'])) {
     $provider = $_POST['oauth_provider'];
     
     if ($provider === 'google') {
         // Redirect ke Google OAuth
         $google_auth_url = "https://accounts.google.com/oauth/authorize?" . http_build_query([
-            'client_id' => 'YOUR_GOOGLE_CLIENT_ID',
-            'redirect_uri' => 'http://yoursite.com/oauth_callback.php',
+            'client_id' => '583572695554-5ajesvomumkt4nnp636kps3fo7cc99no.apps.googleusercontent.com',
+            'redirect_uri' => 'http://localhost/Kitalistinaja/oauth_callback.php',
             'scope' => 'email profile',
             'response_type' => 'code',
             'state' => 'google'
@@ -264,7 +264,8 @@ if ($_POST && isset($_POST['oauth_provider'])) {
 </head>
 <body>
     <div class="container">
-        <div class="back-arrow" onclick="history.back()">←</div>
+        <div class="back-arrow" onclick="window.location.href='halaman3.php'">←</div>
+
         
         <h1 class="title">LOG IN<br>ACCOUNT</h1>
         

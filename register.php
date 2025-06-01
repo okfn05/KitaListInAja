@@ -59,27 +59,43 @@ if (isset($_GET['code']) && isset($_GET['state'])) {
     }
     
     if ($result['success']) {
-        // Cek apakah user sudah ada
-        $stmt = $conn->prepare("SELECT id FROM users WHERE oauth_id = ? AND oauth_provider = ?");
+        // Cek apakah user sudah ada berdasarkan oauth_id dan provider
+        $stmt = $conn->prepare("SELECT * FROM users WHERE oauth_id = ? AND oauth_provider = ?");
         $stmt->bind_param("ss", $result['oauth_id'], $provider);
         $stmt->execute();
         $existing_user = $stmt->get_result()->fetch_assoc();
         
         if ($existing_user) {
-            $errors[] = "Akun dengan " . ucfirst($provider) . " ini sudah terdaftar.";
+            // User sudah ada, login langsung
+            $_SESSION['user_id'] = $existing_user['id'];
+            $_SESSION['username'] = $existing_user['username'];
+            $_SESSION['success'] = "Login dengan " . ucfirst($provider) . " berhasil!";
+            header("Location: dashboard.php");
+            exit();
         } else {
-            // Registrasi user baru dengan OAuth
-            $stmt = $conn->prepare("INSERT INTO users (username, email, oauth_id, oauth_provider, registration_type) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssss", $result['name'], $result['email'], $result['oauth_id'], $provider, 'oauth');
+            // Cek juga berdasarkan email untuk mencegah duplikasi
+            $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
+            $stmt->bind_param("s", $result['email']);
+            $stmt->execute();
+            $existing_email = $stmt->get_result()->fetch_assoc();
             
-            if ($stmt->execute()) {
-                $_SESSION['user_id'] = $conn->insert_id;
-                $_SESSION['username'] = $result['name'];
-                $_SESSION['success'] = "Registrasi dengan " . ucfirst($provider) . " berhasil!";
-                header("Location: dashboard.php");
-                exit();
+            if ($existing_email) {
+                $errors[] = "Email ini sudah terdaftar dengan metode lain.";
             } else {
-                $errors[] = "Terjadi kesalahan saat registrasi dengan " . ucfirst($provider);
+                // Registrasi user baru dengan OAuth
+                $registration_type = 'oauth';
+                $stmt = $conn->prepare("INSERT INTO users (username, email, oauth_id, oauth_provider, registration_type) VALUES (?, ?, ?, ?, ?)");
+                $stmt->bind_param("sssss", $result['name'], $result['email'], $result['oauth_id'], $provider, $registration_type);
+                
+                if ($stmt->execute()) {
+                    $_SESSION['user_id'] = $conn->insert_id;
+                    $_SESSION['username'] = $result['name'];
+                    $_SESSION['success'] = "Registrasi dengan " . ucfirst($provider) . " berhasil!";
+                    header("Location: dashboard.php");
+                    exit();
+                } else {
+                    $errors[] = "Terjadi kesalahan saat registrasi dengan " . ucfirst($provider);
+                }
             }
         }
     } else {
@@ -187,20 +203,52 @@ function makeHttpRequest($url, $method = 'GET', $data = null) {
             border-radius: 10px;
             padding: 40px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative; /* Tambahkan ini */
         }
 
         .back-arrow {
-            position: absolute;
-            top: 30px;
-            left: 30px;
+            position: absolute; /* Ubah dari absolute ke absolute */
+            top: 20px; /* Ubah dari 30px ke 20px */
+            left: 20px; /* Ubah dari 30px ke 20px */
             font-size: 24px;
             color: #333;
             text-decoration: none;
             cursor: pointer;
+            z-index: 10; /* Tambahkan ini */
         }
 
         .back-arrow:hover {
             color: #666;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 40px;
+            color: #333;
+            letter-spacing: 2px;
+            margin-top: 20px; /* Tambahkan ini untuk memberi ruang dari arrow */
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .form-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            h1 {
+                font-size: 2rem;
+                margin-bottom: 30px;
+            }
+
+            .back-arrow {
+                top: 15px; /* Ubah dari 20px ke 15px untuk mobile */
+                left: 15px; /* Ubah dari 20px ke 15px untuk mobile */
+            }
         }
 
         h1 {
@@ -369,11 +417,11 @@ function makeHttpRequest($url, $method = 'GET', $data = null) {
     </style>
 </head>
 <body>
-    <a href="javascript:history.back()" class="back-arrow">←</a>
+
     
     <div class="container">
         <h1>REGISTER ACCOUNT</h1>
-        
+        <a href="halaman3.php" class="back-arrow">←</a>
         <?php if (!empty($errors)): ?>
             <div class="error-messages">
                 <ul>
