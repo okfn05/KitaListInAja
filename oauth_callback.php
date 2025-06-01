@@ -20,7 +20,7 @@ if (empty($_GET)) {
 }
 
 
-// Database configuration (sama seperti di login.php)
+// Database configuration
 $host = 'localhost';
 $dbname = 'kitalistinaja';
 $username = 'root';

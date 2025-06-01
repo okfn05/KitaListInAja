@@ -1,7 +1,7 @@
 <?php
 // register.php
 require_once 'db.php';
-require_once 'oauth_config.php'; // File konfigurasi OAuth
+require_once 'oauth_config.php'; 
 session_start();
 
 // Proses form jika ada data POST

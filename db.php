@@ -1,8 +1,8 @@
 <?php
 $host = "localhost";
 $user = "root";
-$password = ""; // ganti sesuai konfigurasi MySQL-mu
-$dbname = "kitalistinaja"; // nama database
+$password = ""; 
+$dbname = "kitalistinaja"; 
 
 $conn = new mysqli($host, $user, $password, $dbname);
 

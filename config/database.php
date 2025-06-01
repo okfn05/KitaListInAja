@@ -1,10 +1,10 @@
 <?php
-// config/database.php
+
 class Database {
     private $host = "localhost";
     private $db_name = "kitalistinaja";
-    private $username = "root"; // sesuaikan dengan username database Anda
-    private $password = "";     // sesuaikan dengan password database Anda
+    private $username = "root";
+    private $password = "";    
     public $conn;
 
     public function getConnection() {
