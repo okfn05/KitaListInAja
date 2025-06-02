@@ -2,6 +2,6 @@
 // auth/logout.php
 session_start();
 session_destroy();
-header("Location: login.php");
+header("Location: index.php?page=login");
 exit();
 ?>

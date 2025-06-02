@@ -1,5 +1,5 @@
 <?php
-session_start();
+
 
 // Database configuration
 $host = 'localhost';
@@ -30,11 +30,12 @@ if ($_POST && isset($_POST['login_type']) && $_POST['login_type'] === 'regular')
                 // Login berhasil
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
+                $_SESSION['display_name'] = $user ['display_name'];
                 $_SESSION['email'] = $user['email'];
                 $_SESSION['logged_in'] = true;
                 
                 // Redirect ke dashboard atau halaman utama
-                header("Location: dashboard.php");
+                header("Location: index.php?page=dashboard");
                 exit();
             } else {
                 $error = "Username atau password salah";
@@ -64,19 +65,19 @@ if ($_POST && isset($_POST['oauth_provider'])) {
         exit();
     }
     
-    if ($provider === 'apple') {
-        // Redirect ke Apple OAuth
-        $apple_auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
-            'client_id' => 'YOUR_APPLE_CLIENT_ID',
-            'redirect_uri' => 'http://yoursite.com/oauth_callback.php',
-            'scope' => 'email name',
-            'response_type' => 'code',
-            'state' => 'apple'
-        ]);
-        header("Location: " . $apple_auth_url);
-        exit();
-    }
-}
+//     if ($provider === 'apple') {
+//         // Redirect ke Apple OAuth
+//         $apple_auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
+//             'client_id' => 'YOUR_APPLE_CLIENT_ID',
+//             'redirect_uri' => 'http://yoursite.com/oauth_callback.php',
+//             'scope' => 'email name',
+//             'response_type' => 'code',
+//             'state' => 'apple'
+//         ]);
+//         header("Location: " . $apple_auth_url);
+//         exit();
+//     }
+ }
 ?>
 
 <!DOCTYPE html>
@@ -194,6 +195,9 @@ if ($_POST && isset($_POST['oauth_provider'])) {
             gap: 10px;
             text-transform: uppercase;
             color: white;
+            width: 100%; /* Membuat tombol mengisi penuh container */
+            min-width: 280px; /* Lebar minimum untuk konsistensi */
+            box-sizing: border-box;
         }
 
         .social-btn img {
@@ -244,6 +248,71 @@ if ($_POST && isset($_POST['oauth_provider'])) {
             border-radius: 5px;
         }
 
+        /* Custom Alert Styles */
+        .custom-alert {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .alert-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            min-width: 300px;
+        }
+
+        .alert-box.error {
+            border-top: 5px solid #f44336;
+        }
+
+        .alert-box.success {
+            border-top: 5px solid #4CAF50;
+        }
+
+        .alert-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .alert-box.error .alert-icon {
+            color: #f44336;
+        }
+
+        .alert-box.success .alert-icon {
+            color: #4CAF50;
+        }
+
+        .alert-message {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .alert-btn {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .alert-btn:hover {
+            background-color: #555;
+        }
+
         @media (max-width: 768px) {
             .form-container {
                 flex-direction: column;
@@ -264,21 +333,12 @@ if ($_POST && isset($_POST['oauth_provider'])) {
 </head>
 <body>
     <div class="container">
-        <div class="back-arrow" onclick="window.location.href='halaman3.php'">←</div>
+        <div class="back-arrow" onclick="window.location.href='index.php?page=halaman3'">←</div>
 
-        
         <h1 class="title">LOG IN<br>ACCOUNT</h1>
         
         <div class="form-container">
             <div class="left-section">
-                <?php if (isset($error)): ?>
-                    <div class="error"><?php echo htmlspecialchars($error); ?></div>
-                <?php endif; ?>
-                
-                <?php if (isset($success)): ?>
-                    <div class="success"><?php echo htmlspecialchars($success); ?></div>
-                <?php endif; ?>
-                
                 <form method="POST" action="">
                     <input type="hidden" name="login_type" value="regular">
                     
@@ -289,7 +349,6 @@ if ($_POST && isset($_POST['oauth_provider'])) {
                             id="username" 
                             name="username" 
                             placeholder="Enter your Username"
-                            value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>"
                             required
                         >
                     </div>
@@ -318,15 +377,42 @@ if ($_POST && isset($_POST['oauth_provider'])) {
                         <img src="google.png" alt="Google"> LOG IN WITH GOOGLE
                     </button>
                 </form>
-                
-                <form method="POST" action="">
-                    <input type="hidden" name="oauth_provider" value="apple">
-                    <button type="submit" class="social-btn apple-btn">
-                        <img src="apple.png" alt="Apple"> LOG IN WITH APPLE
-                    </button>
-                </form>
+                               
+                <button type="button" class="social-btn apple-btn" onclick="loginWithApple()">
+                    <img src="apple.png" alt="Apple"> LOG IN WITH APPLE
+                </button>
             </div>
         </div>
     </div>
+
+    <script>
+        // Function to show custom alert
+        function showAlert(message, type = 'error') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'custom-alert';
+            
+            const icon = type === 'error' ? '❌' : '✅';
+            
+            alertDiv.innerHTML = `
+                <div class="alert-box ${type}">
+                    <div class="alert-icon">${icon}</div>
+                    <div class="alert-message">${message}</div>
+                    <button class="alert-btn" onclick="closeAlert(this)">OK</button>
+                </div>
+            `;
+            
+            document.body.appendChild(alertDiv);
+        }
+
+        function closeAlert(btn) {
+            const alertDiv = btn.closest('.custom-alert');
+            alertDiv.remove();
+        }
+
+        // Function untuk login dengan Apple
+        function loginWithApple() {
+            showAlert('Mohon maaf, Login Menggunakan Apple account belum tersedia', 'error');
+        }
+    </script>
 </body>
 </html>

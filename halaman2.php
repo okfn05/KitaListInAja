@@ -73,12 +73,12 @@
 </head>
 <body>
     <!-- Tombol kembali -->
-    <button class="back-button" onclick="window.location.href='halaman1.php'">&#8592;</button>
+    <button class="back-button" onclick="window.location.href='index.php?page=halaman1'">&#8592;</button>
 
     <img src="logo.png" alt="Logo" class="logo">
     <h1 class="title">MANAGE TASK</h1>
     <p class="subtitle">You can manage your own daily task</p>
 
-    <button class="next-button" onclick="window.location.href='halaman3.php'">Get Started</button>
+    <button class="next-button" onclick="window.location.href='index.php?page=halaman3'">Get Started</button>
 </body>
 </html>

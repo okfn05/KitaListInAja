@@ -38,7 +38,7 @@ $google_client_id = '583572695554-5ajesvomumkt4nnp636kps3fo7cc99no.apps.googleus
 $google_client_secret = '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';
 
 // Gunakan URL yang benar sesuai dengan struktur folder Anda
-$google_redirect_uri = 'http://localhost/Kitalistinaja/oauth_callback.php';
+$google_redirect_uri = 'https://kitalistinaja.42web.io/oauth_callback.php';
 
 // Apple OAuth configuration
 $apple_client_id = 'YOUR_APPLE_CLIENT_ID';
@@ -150,6 +150,7 @@ function handleOAuthUser($pdo, $user_info, $provider) {
             // User sudah ada, langsung login
             $_SESSION['user_id'] = $existing_user['id'];
             $_SESSION['username'] = $existing_user['username'];
+            $_SESSION['display_name'] = $existing_user['display_name'] ?? $existing_user['username'];
             $_SESSION['email'] = $existing_user['email'];
             $_SESSION['logged_in'] = true;
             
@@ -157,13 +158,14 @@ function handleOAuthUser($pdo, $user_info, $provider) {
             // User baru, buat akun
             $username = generateUniqueUsername($pdo, $name, $provider);
             
-            $stmt = $pdo->prepare("INSERT INTO users (username, email, oauth_id, oauth_provider, registration_type, created_at) VALUES (?, ?, ?, ?, 'oauth', NOW())");
+            $stmt = $pdo->prepare("INSERT INTO users (username, display_name, email, oauth_id, oauth_provider, registration_type, created_at) VALUES (?, ?, ?, ?, ?, 'oauth', NOW())");
             $stmt->execute([$username, $email, $oauth_id, $provider]);
             
             $new_user_id = $pdo->lastInsertId();
             
             $_SESSION['user_id'] = $new_user_id;
             $_SESSION['username'] = $username;
+            $_SESSION['display_name'] = $name;
             $_SESSION['email'] = $email;
             $_SESSION['logged_in'] = true;
         }

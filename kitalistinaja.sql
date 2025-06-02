@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 01, 2025 at 11:01 AM
+-- Generation Time: Jun 02, 2025 at 02:56 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -39,15 +39,6 @@ CREATE TABLE `tasks` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `tasks`
---
-
-INSERT INTO `tasks` (`id`, `user_id`, `title`, `category`, `priority`, `status`, `due_date`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Nugas', 'school', 'medium', '', '2025-06-02', '2025-06-01 03:25:58', '2025-06-01 03:34:38'),
-(2, 1, 'Nugas', 'school', 'medium', '', '2025-06-10', '2025-06-01 03:36:26', '2025-06-01 03:36:35'),
-(5, 1, 'sdfsa', 'work', 'medium', '', '2025-06-28', '2025-06-01 03:41:14', '2025-06-01 03:41:23');
-
 -- --------------------------------------------------------
 
 --
@@ -56,7 +47,8 @@ INSERT INTO `tasks` (`id`, `user_id`, `title`, `category`, `priority`, `status`,
 
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
-  `username` varchar(100) NOT NULL,
+  `username` varchar(255) DEFAULT NULL,
+  `display_name` varchar(255) DEFAULT NULL,
   `password` varchar(255) DEFAULT NULL,
   `email` varchar(255) DEFAULT NULL,
   `oauth_id` varchar(255) DEFAULT NULL,
@@ -65,14 +57,6 @@ CREATE TABLE `users` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `users`
---
-
-INSERT INTO `users` (`id`, `username`, `password`, `email`, `oauth_id`, `oauth_provider`, `registration_type`, `created_at`, `updated_at`) VALUES
-(1, 'apa', '$2y$10$qGOqNpjE6hBVFRc3tC39POlvhtNL//yFT9rtvDDPe/clY9QroVSNq', NULL, NULL, NULL, 'regular', '2025-06-01 02:37:44', '2025-06-01 02:37:44'),
-(3, 'apa3333', '$2y$10$j8JnTI3NohChlpaAyuislue14nfPbYbyk3h/JrZDrhmiQY2IFf4hS', NULL, NULL, NULL, 'regular', '2025-06-01 07:44:29', '2025-06-01 07:44:29');
 
 --
 -- Indexes for dumped tables
@@ -103,13 +87,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `tasks`
 --
 ALTER TABLE `tasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- Constraints for dumped tables

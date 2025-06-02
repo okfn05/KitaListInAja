@@ -547,7 +547,16 @@ $stats = $task->getStats();
 
         <div class="user-info">
             <span class="date"><?php echo date('d F Y'); ?></span>
-            <span>Hi, <?php echo $_SESSION['username']; ?>!</span>
+            <span>Hi,      
+                        <?php 
+                            if (isset($_SESSION['username'])) {
+                                echo $_SESSION['username'];
+                            } elseif (isset($_SESSION['display_name'])) {
+                                echo $_SESSION['display_name'];
+                            } else {
+                                echo "Guest";
+                            }
+                        ?>!</span>
             <a href="logout.php" class="logout-btn">
                 <i class="fas fa-sign-out-alt"></i>
             </a>
@@ -625,7 +634,18 @@ $stats = $task->getStats();
             <div class="welcome-section">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <h1>Welcome, <?php echo $_SESSION['username']; ?></h1>
+                        <h1>
+                            Welcome, 
+                            <?php 
+                                if (isset($_SESSION['username'])) {
+                                    echo $_SESSION['username'];
+                                } elseif (isset($_SESSION['display_name'])) {
+                                    echo $_SESSION['display_name'];
+                                } else {
+                                    echo "Guest";
+                                }
+                            ?>
+                        </h1>
                         <p style="color: #666;">Kelola tugas Anda dengan mudah dan efisien</p>
                     </div>
                     <button class="create-task-btn" onclick="openModal()">

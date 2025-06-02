@@ -2,7 +2,7 @@
 // register.php
 require_once 'db.php';
 require_once 'oauth_config.php'; 
-session_start();
+
 
 // Proses form jika ada data POST
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $confirm_password = $_POST['confirm_password'] ?? '';
     
     $errors = [];
+    $success_message = '';
     
     // Validasi input
     if (empty($username)) {
@@ -31,19 +32,38 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     // Jika tidak ada error, proses registrasi
     if (empty($errors)) {
-        // Hash password dulu SEBELUM dipakai
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        try {
+            // Hash password dulu SEBELUM dipakai
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-        // Simpan ke database
-        $stmt = $conn->prepare("INSERT INTO users (username, password, registration_type) VALUES (?, ?, 'regular')");
-        $stmt->bind_param("ss", $username, $hashed_password);
+            // Cek apakah username sudah ada
+            $check_stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
+            $check_stmt->bind_param("s", $username);
+            $check_stmt->execute();
+            $existing_user = $check_stmt->get_result()->fetch_assoc();
+            
+            if ($existing_user) {
+                $errors[] = "Username sudah terdaftar";
+            } else {
+                // Simpan ke database - untuk registrasi regular pakai kolom username
+                $stmt = $conn->prepare("INSERT INTO users (username, password, registration_type) VALUES (?, ?, 'regular')");
+                $stmt->bind_param("ss", $username, $hashed_password);
 
-        if ($stmt->execute()) {
-            $_SESSION['success'] = "Registrasi berhasil! Silakan login.";
-            header("Location: login.php");
-            exit();
-        } else {
-            $errors[] = "Username sudah digunakan atau terjadi kesalahan.";
+                if ($stmt->execute()) {
+                    $success_message = "Registrasi berhasil! Silakan login.";
+                    // Reset form values
+                    $username = '';
+                } else {
+                    $errors[] = "Terjadi kesalahan saat registrasi.";
+                }
+            }
+        } catch (mysqli_sql_exception $e) {
+            // Handle duplicate entry error atau error lainnya
+            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                $errors[] = "Username sudah terdaftar";
+            } else {
+                $errors[] = "Terjadi kesalahan saat registrasi.";
+            }
         }
     }
 }
@@ -68,12 +88,12 @@ if (isset($_GET['code']) && isset($_GET['state'])) {
         if ($existing_user) {
             // User sudah ada, login langsung
             $_SESSION['user_id'] = $existing_user['id'];
-            $_SESSION['username'] = $existing_user['username'];
+            $_SESSION['username'] = $existing_user['username'] ?: $existing_user['display_name'];
             $_SESSION['success'] = "Login dengan " . ucfirst($provider) . " berhasil!";
-            header("Location: dashboard.php");
+            header("Location: index.php?page=login");
             exit();
         } else {
-            // Cek juga berdasarkan email untuk mencegah duplikasi
+            // Cek berdasarkan email untuk mencegah duplikasi email
             $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
             $stmt->bind_param("s", $result['email']);
             $stmt->execute();
@@ -82,18 +102,22 @@ if (isset($_GET['code']) && isset($_GET['state'])) {
             if ($existing_email) {
                 $errors[] = "Email ini sudah terdaftar dengan metode lain.";
             } else {
-                // Registrasi user baru dengan OAuth
-                $registration_type = 'oauth';
-                $stmt = $conn->prepare("INSERT INTO users (username, email, oauth_id, oauth_provider, registration_type) VALUES (?, ?, ?, ?, ?)");
-                $stmt->bind_param("sssss", $result['name'], $result['email'], $result['oauth_id'], $provider, $registration_type);
-                
-                if ($stmt->execute()) {
-                    $_SESSION['user_id'] = $conn->insert_id;
-                    $_SESSION['username'] = $result['name'];
-                    $_SESSION['success'] = "Registrasi dengan " . ucfirst($provider) . " berhasil!";
-                    header("Location: dashboard.php");
-                    exit();
-                } else {
+                try {
+                    // Registrasi user baru dengan OAuth - pakai display_name
+                    $registration_type = 'oauth';
+                    $stmt = $conn->prepare("INSERT INTO users (display_name, email, oauth_id, oauth_provider, registration_type) VALUES (?, ?, ?, ?, ?)");
+                    $stmt->bind_param("sssss", $result['name'], $result['email'], $result['oauth_id'], $provider, $registration_type);
+                    
+                    if ($stmt->execute()) {
+                        $_SESSION['user_id'] = $conn->insert_id;
+                        $_SESSION['username'] = $result['name'];
+                        $_SESSION['success'] = "Registrasi dengan " . ucfirst($provider) . " berhasil!";
+                        header("Location: index.php?page=login");
+                        exit();
+                    } else {
+                        $errors[] = "Terjadi kesalahan saat registrasi dengan " . ucfirst($provider);
+                    }
+                } catch (mysqli_sql_exception $e) {
                     $errors[] = "Terjadi kesalahan saat registrasi dengan " . ucfirst($provider);
                 }
             }
@@ -377,6 +401,15 @@ function makeHttpRequest($url, $method = 'GET', $data = null) {
             margin-bottom: 5px;
         }
 
+        .info-messages {
+            background-color: #e3f2fd;
+            color: #1565c0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #1565c0;
+        }
+
         .loading {
             pointer-events: none;
             opacity: 0.6;
@@ -392,6 +425,71 @@ function makeHttpRequest($url, $method = 'GET', $data = null) {
             40% { content: ".."; }
             60% { content: "."; }
             80%, 100% { content: ""; }
+        }
+
+        /* Custom Alert Styles */
+        .custom-alert {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .alert-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            min-width: 300px;
+        }
+
+        .alert-box.error {
+            border-top: 5px solid #f44336;
+        }
+
+        .alert-box.success {
+            border-top: 5px solid #4CAF50;
+        }
+
+        .alert-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .alert-box.error .alert-icon {
+            color: #f44336;
+        }
+
+        .alert-box.success .alert-icon {
+            color: #4CAF50;
+        }
+
+        .alert-message {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .alert-btn {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .alert-btn:hover {
+            background-color: #555;
         }
 
         @media (max-width: 768px) {
@@ -421,16 +519,7 @@ function makeHttpRequest($url, $method = 'GET', $data = null) {
     
     <div class="container">
         <h1>REGISTER ACCOUNT</h1>
-        <a href="halaman3.php" class="back-arrow">←</a>
-        <?php if (!empty($errors)): ?>
-            <div class="error-messages">
-                <ul>
-                    <?php foreach ($errors as $error): ?>
-                        <li><?php echo htmlspecialchars($error); ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-        <?php endif; ?>
+        <a href="index.php?page=halaman3" class="back-arrow">←</a>
         
         <div class="form-container">
             <div class="form-left">
@@ -488,6 +577,42 @@ function makeHttpRequest($url, $method = 'GET', $data = null) {
     </div>
 
     <script>
+        // Function to show custom alert
+        function showAlert(message, type = 'error') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'custom-alert';
+            
+            const icon = type === 'error' ? '❌' : '✅';
+            
+            alertDiv.innerHTML = `
+                <div class="alert-box ${type}">
+                    <div class="alert-icon">${icon}</div>
+                    <div class="alert-message">${message}</div>
+                    <button class="alert-btn" onclick="closeAlert(this)">OK</button>
+                </div>
+            `;
+            
+            document.body.appendChild(alertDiv);
+        }
+
+        function closeAlert(btn) {
+            const alertDiv = btn.closest('.custom-alert');
+            alertDiv.remove();
+        }
+
+        // Show alerts if there are PHP messages
+        <?php if (!empty($errors)): ?>
+            <?php if (in_array("Username sudah terdaftar", $errors)): ?>
+                showAlert('Error: Username Sudah Terdaftar', 'error');
+            <?php else: ?>
+                showAlert('<?php echo implode("\\n", array_map("addslashes", $errors)); ?>', 'error');
+            <?php endif; ?>
+        <?php endif; ?>
+
+        <?php if (!empty($success_message)): ?>
+            showAlert('<?php echo addslashes($success_message); ?>', 'success');
+        <?php endif; ?>
+
         function registerWithGoogle() {
             const btn = document.getElementById('google-btn');
             btn.classList.add('loading');
@@ -505,19 +630,20 @@ function makeHttpRequest($url, $method = 'GET', $data = null) {
         }
 
         function registerWithApple() {
+            showAlert('Mohon maaf, Registrasi Menggunakan Apple account belum tersedia', 'error');
             const btn = document.getElementById('apple-btn');
             btn.classList.add('loading');
             btn.innerHTML = '<img src="apple.png" alt="Apple Logo">Connecting to Apple';
             
             // Redirect ke Apple OAuth
-            const clientId = '<?php echo $apple_client_id ?? ""; ?>';
-            const redirectUri = encodeURIComponent('<?php echo $apple_redirect_uri ?? ""; ?>');
-            const scope = encodeURIComponent('name email');
-            const state = 'apple';
+            //const clientId = '<?php echo $apple_client_id ?? ""; ?>';
+            //const redirectUri = encodeURIComponent('<?php echo $apple_redirect_uri ?? ""; ?>');
+            //const scope = encodeURIComponent('name email');
+           // const state = 'apple';
             
-            const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&response_mode=form_post&state=${state}`;
+            //const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&response_mode=form_post&state=${state}`;
             
-            window.location.href = appleAuthUrl;
+           // window.location.href = appleAuthUrl;
         }
 
         // Validasi real-time untuk konfirmasi password
@@ -535,7 +661,7 @@ function makeHttpRequest($url, $method = 'GET', $data = null) {
         // Cek jika ada parameter error di URL
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('error')) {
-            alert('OAuth Error: ' + urlParams.get('error_description'));
+            showAlert('OAuth Error: ' + urlParams.get('error_description'), 'error');
         }
     </script>
 </body>

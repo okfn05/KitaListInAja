@@ -61,6 +61,6 @@
     <h1 class="title">CREATE TASK</h1>
     <p class="subtitle">You can create your own daily task</p>
 
-    <button class="next-button" onclick="window.location.href='halaman2.php'">Next</button>
+    <button class="next-button" onclick="window.location.href='index.php?page=halaman2'">Next</button>
 </body>
 </html>

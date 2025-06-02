@@ -84,7 +84,7 @@
 </head>
 <body>
     <!-- Tombol kembali -->
-    <button class="back-button" onclick="window.location.href='halaman2.php'">&#8592;</button>
+    <button class="back-button" onclick="window.location.href='index.php?page=halaman2'">&#8592;</button>
 
     <!-- Judul -->
     <h1 class="title">Welcome to</h1>
@@ -96,9 +96,9 @@
     <p class="subtitle">Please login to your account or create new account to continue</p>
 
     <!-- Tombol Login -->
-    <button class="button login-button" onclick="window.location.href='login.php'">Login</button>
+    <button class="button login-button" onclick="window.location.href='index.php?page=login'">Login</button>
 
     <!-- Tombol Create New Account -->
-    <button class="button create-button" onclick="window.location.href='register.php'">Create New Account</button>
+    <button class="button create-button" onclick="window.location.href='index.php?page=register'">Create New Account</button>
 </body>
 </html>
