@@ -203,18 +203,18 @@ function makeHttpRequest($url, $method = 'GET', $data = null) {
             border-radius: 10px;
             padding: 40px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: relative; /* Tambahkan ini */
+            position: relative; 
         }
 
         .back-arrow {
-            position: absolute; /* Ubah dari absolute ke absolute */
-            top: 20px; /* Ubah dari 30px ke 20px */
-            left: 20px; /* Ubah dari 30px ke 20px */
+            position: absolute; 
+            top: 20px; 
+            left: 20px; 
             font-size: 24px;
             color: #333;
             text-decoration: none;
             cursor: pointer;
-            z-index: 10; /* Tambahkan ini */
+            z-index: 10; 
         }
 
         .back-arrow:hover {
@@ -227,7 +227,7 @@ function makeHttpRequest($url, $method = 'GET', $data = null) {
             margin-bottom: 40px;
             color: #333;
             letter-spacing: 2px;
-            margin-top: 20px; /* Tambahkan ini untuk memberi ruang dari arrow */
+            margin-top: 20px; 
         }
 
         @media (max-width: 768px) {
@@ -246,8 +246,8 @@ function makeHttpRequest($url, $method = 'GET', $data = null) {
             }
 
             .back-arrow {
-                top: 15px; /* Ubah dari 20px ke 15px untuk mobile */
-                left: 15px; /* Ubah dari 20px ke 15px untuk mobile */
+                top: 15px; 
+                left: 15px; 
             }
         }
 
@@ -353,7 +353,7 @@ function makeHttpRequest($url, $method = 'GET', $data = null) {
         }
 
         .apple-btn {
-            background-color: #000;
+            background-color:  #ff1493;
         }
 
         .social-btn:hover {
