@@ -53,7 +53,7 @@ if ($_POST && isset($_POST['oauth_provider'])) {
     
     if ($provider === 'google') {
         // Redirect ke Google OAuth
-        $google_auth_url = "https://accounts.google.com/oauth/authorize?" . http_build_query([
+        $google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
             'client_id' => '583572695554-5ajesvomumkt4nnp636kps3fo7cc99no.apps.googleusercontent.com',
             'redirect_uri' => 'http://localhost/Kitalistinaja/oauth_callback.php',
             'scope' => 'email profile',
@@ -66,7 +66,7 @@ if ($_POST && isset($_POST['oauth_provider'])) {
     
     if ($provider === 'apple') {
         // Redirect ke Apple OAuth
-        $apple_auth_url = "https://appleid.apple.com/auth/authorize?" . http_build_query([
+        $apple_auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
             'client_id' => 'YOUR_APPLE_CLIENT_ID',
             'redirect_uri' => 'http://yoursite.com/oauth_callback.php',
             'scope' => 'email name',
